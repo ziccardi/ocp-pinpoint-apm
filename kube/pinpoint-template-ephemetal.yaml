@@ -105,7 +105,7 @@ objects:
     source:
       type: Git
       git:
-        uri: https://github.com/makentenza/ocp-pinpoint-apm.git
+        uri: https://github.com/ziccardi/ocp-pinpoint-apm.git
     strategy:
       type: "Docker"
       dockerStrategy:
