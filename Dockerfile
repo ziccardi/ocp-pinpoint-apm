@@ -7,21 +7,27 @@ LABEL io.k8s.description="Platform for running Pinpoint Application Performance 
       io.openshift.tags="pinpoint-apm"
 
 ENV JAVA_6_HOME /usr/java/jdk1.6.0_45
-ENV JAVA_7_HOME /usr/java/jdk1.8.0_181-amd64
-ENV JAVA_8_HOME /usr/java/jdk1.8.0_181-amd64
-ENV JAVA_HOME /usr/java/jdk1.8.0_181-amd64
+ENV JAVA_7_HOME /usr/java/java-se-8u40-ri
+ENV JAVA_8_HOME /usr/java/java-se-8u40-ri
+ENV JAVA_HOME /usr/java/java-se-8u40-ri
 
 COPY src/* /usr/local/src/
 
 RUN cd /usr/local/src/ && \
     cp epel-apache-maven.repo /etc/yum.repos.d/ && \
     rpm -i epel-release-7-8.noarch.rpm && \
-    yum install git wget tar hostname lsof net-tools apache-maven -y && \
-    wget --no-check-certificate --no-cookies --header "Cookie: oraclelicense=accept-securebackup-cookie" https://download.java.net/openjdk/jdk8u40/ri/jdk_ri-8u40-b25-linux-x64-10_feb_2015.tar.gz -O jdk-8u181-linux-x64.rpm && \
+    yum install openssl git wget tar hostname lsof net-tools apache-maven -y && \
+    wget --no-check-certificate  https://download.java.net/openjdk/jdk8u40/ri/jdk_ri-8u40-b25-linux-x64-10_feb_2015.tar.gz -O jdk-8u40-linux-x64.tgz && \
     rpm -i jdk-6u45-linux-amd64.rpm --force && \
-    rpm -i jdk-8u181-linux-x64.rpm --force && \
+    tar xvfz jdk-8u40-linux-x64.tgz -C /usr/java && \
     yum clean all && \
-    rm -rf jdk-6u45-linux-amd64.rpm jdk-8u181-linux-x64.rpm epel-release-7-8.noarch.rpm
+    rm -rf jdk-6u45-linux-amd64.rpm jdk-8u40-linux-x64.tgz epel-release-7-8.noarch.rpm
+
+RUN wget https://mxr.mozilla.org/mozilla/source/security/nss/lib/ckfw/builtins/certdata.txt
+RUN wget https://raw.githubusercontent.com/curl/curl/master/lib/mk-ca-bundle.pl
+RUN wget https://github.com/use-sparingly/keyutil/releases/download/0.4.0/keyutil-0.4.0.jar
+RUN perl mk-ca-bundle.pl -n > ca-bundle.crt
+RUN /usr/java/java-se-8u40-ri/bin/java -jar keyutil-0.4.0.jar --import --keystore-file /usr/java/java-se-8u40-ri/jre/lib/security/cacerts --password changeit --import-pem-file ca-bundle.crt
 
 COPY src/howto-startup.sh /root/
 COPY src/pinpoint-start.sh /root/
@@ -31,8 +37,9 @@ RUN chmod +x /root/howto-startup.sh /root/pinpoint-start.sh && \
 
 RUN git clone https://github.com/naver/pinpoint.git /pinpoint && \
     mkdir /pinpoint/logs
+    
 WORKDIR /pinpoint
-RUN git checkout tags/1.6.0
+RUN git checkout tags/1.7.3
 RUN mvn install -Dmaven.test.skip=true -B
 
 
